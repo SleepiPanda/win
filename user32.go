@@ -3495,7 +3495,7 @@ func UpdateLayeredWindow(hwnd HWND, hdcDst HDC, pptDst *POINT,
 	psize *SIZE, hdcSrc HDC, pptSrc *POINT,
 	crKey COLORREF, dwflags uint32) bool {
 
-	ret, _, _ := syscall.SyscallN(updateLayeredWindow.Addr(), 1,
+	ret, _, _ := syscall.SyscallN(updateLayeredWindow.Addr(),
 		uintptr(hwnd),
 		uintptr(hdcDst),
 		uintptr(unsafe.Pointer(pptDst)),
