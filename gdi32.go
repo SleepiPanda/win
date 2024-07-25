@@ -8,6 +8,7 @@
 package win
 
 import (
+	"fmt"
 	"syscall"
 	"unsafe"
 
@@ -1335,11 +1336,11 @@ func CreateBrushIndirect(lplb *LOGBRUSH) HBRUSH {
 }
 
 func CreateCompatibleDC(hdc HDC) HDC {
-	ret, _, _ := syscall.Syscall(createCompatibleDC.Addr(), 1,
+	ret, _, err := syscall.Syscall(createCompatibleDC.Addr(), 1,
 		uintptr(hdc),
 		0,
 		0)
-
+	fmt.Println(err)
 	return HDC(ret)
 }
 

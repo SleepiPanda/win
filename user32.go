@@ -8,6 +8,7 @@
 package win
 
 import (
+	"fmt"
 	"syscall"
 	"unsafe"
 
@@ -1466,6 +1467,12 @@ const (
 	ULW_EX_NORESIZE = 0x00000008
 )
 
+// SetLayeredWindowAttribnutes Constants
+const (
+	LWA_COLORKEY = 0x00000001
+	LWA_ALPHA    = 0x00000002
+)
+
 type NMBCDROPDOWN struct {
 	Hdr      NMHDR
 	RcButton RECT
@@ -1882,6 +1889,7 @@ var (
 	setCursorPos                *windows.LazyProc
 	setFocus                    *windows.LazyProc
 	setForegroundWindow         *windows.LazyProc
+	setLayeredWindowAttributes  *windows.LazyProc
 	setMenu                     *windows.LazyProc
 	setMenuDefaultItem          *windows.LazyProc
 	setMenuInfo                 *windows.LazyProc
@@ -2038,6 +2046,7 @@ func init() {
 	setCursorPos = libuser32.NewProc("SetCursorPos")
 	setFocus = libuser32.NewProc("SetFocus")
 	setForegroundWindow = libuser32.NewProc("SetForegroundWindow")
+	setLayeredWindowAttributes = libuser32.NewProc("SetLayeredWindowAttributes")
 	setMenu = libuser32.NewProc("SetMenu")
 	setMenuDefaultItem = libuser32.NewProc("SetMenuDefaultItem")
 	setMenuInfo = libuser32.NewProc("SetMenuInfo")
@@ -2532,11 +2541,11 @@ func GetDesktopWindow() HWND {
 }
 
 func GetDC(hWnd HWND) HDC {
-	ret, _, _ := syscall.Syscall(getDC.Addr(), 1,
+	ret, _, err := syscall.Syscall(getDC.Addr(), 1,
 		uintptr(hWnd),
 		0,
 		0)
-
+	fmt.Println(err)
 	return HDC(ret)
 }
 
@@ -3493,9 +3502,8 @@ func UpdateWindow(hwnd HWND) bool {
 
 func UpdateLayeredWindow(hwnd HWND, hdcDst HDC, pptDst *POINT,
 	psize *SIZE, hdcSrc HDC, pptSrc *POINT,
-	crKey COLORREF, bf *BLENDFUNCTION, dwflags uint32) bool {
-
-	ret, _, _ := syscall.SyscallN(updateLayeredWindow.Addr(),
+	crKey COLORREF, bf *BLENDFUNCTION, dwflags uint32) error {
+	ret, _, errID := syscall.SyscallN(updateLayeredWindow.Addr(),
 		uintptr(hwnd),
 		uintptr(hdcDst),
 		uintptr(unsafe.Pointer(pptDst)),
@@ -3506,7 +3514,23 @@ func UpdateLayeredWindow(hwnd HWND, hdcDst HDC, pptDst *POINT,
 		uintptr(unsafe.Pointer(bf)),
 		uintptr(dwflags),
 	)
-	return ret != 0
+	if uint32(ret) == 0 {
+		return fmt.Errorf(errID.Error())
+	}
+	return nil
+}
+
+func SetLayeredWindowAttribute(hwnd HWND, crkey COLORREF, bAlpha byte, dwFlags uint32) error {
+	ret, _, errID := syscall.SyscallN(setLayeredWindowAttributes.Addr(),
+		uintptr(hwnd),
+		uintptr(crkey),
+		uintptr(bAlpha),
+		uintptr(dwFlags),
+	)
+	if uint32(ret) != 0 {
+		return fmt.Errorf(errID.Error())
+	}
+	return nil
 }
 
 func WindowFromDC(hDC HDC) HWND {
